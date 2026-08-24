@@ -94,4 +94,4 @@ Pull requests run the same checks on Python 3.10 through 3.13.
 
 ## License
 
-Apache License 2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Apache License 2.0 — see [LICENSE](LICENSE).
