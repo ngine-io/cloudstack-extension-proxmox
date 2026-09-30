@@ -200,12 +200,13 @@ class ProxmoxManager:
         settings = self.settings
         pairs = zip(settings.mac_addresses, settings.vlans, strict=False)
         for index, (mac, vlan) in enumerate(pairs):
-            if not mac or not vlan:
+            if not mac:
                 continue
-            value = (
-                f"virtio={mac},bridge={settings.network_bridge},"
-                f"tag={vlan},firewall=0"
-            )
+            value = f"virtio={mac},bridge={settings.network_bridge}"
+            # CloudStack marks untagged networks as vlan://untagged.
+            if vlan and vlan.lower() != "untagged":
+                value += f",tag={vlan}"
+            value += ",firewall=0"
             self.client.call("PUT", f"{self._vm_path}/config/", {f"net{index}": value})
 
     def _memory_mb(self) -> int:

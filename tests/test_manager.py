@@ -74,14 +74,28 @@ def test_create_attaches_every_nic_with_its_vlan(settings):
     ]
 
 
-def test_create_skips_nics_without_a_mac_or_vlan(settings):
-    settings.mac_addresses = ["02:00:00:aa:bb:cc", ""]
-    settings.vlans = ["", "200"]
+def test_create_skips_nics_without_a_mac(settings):
+    settings.mac_addresses = [""]
+    settings.vlans = ["100"]
     manager, client = build(settings)
 
     manager.create()
 
     assert [call for call in client.calls if call[1].endswith("/config/")] == []
+
+
+@pytest.mark.parametrize("vlan", ["", "untagged"])
+def test_create_attaches_untagged_nics_without_a_tag(settings, vlan):
+    settings.mac_addresses = ["02:00:00:aa:bb:cc"]
+    settings.vlans = [vlan]
+    manager, client = build(settings)
+
+    manager.create()
+
+    nic_calls = [call for call in client.calls if call[1].endswith("/config/")]
+    assert [call[2] for call in nic_calls] == [
+        {"net0": "virtio=02:00:00:aa:bb:cc,bridge=vmbr0,firewall=0"}
+    ]
 
 
 def test_create_from_an_iso_provisions_a_disk_and_cdrom(settings):
