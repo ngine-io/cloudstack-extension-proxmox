@@ -34,7 +34,7 @@ from .errors import ProxmoxError
 from .manager import ProxmoxManager
 from .output import fail, succeed
 
-USAGE = "Usage: proxmox.py <operation> '<json-file-path>'"
+USAGE = "Usage: cloudstack-extension-proxmox <action> <payload.json> [timeout-seconds]"
 
 
 def operations(manager: ProxmoxManager) -> dict[str, Callable[[], dict[str, Any]]]:
