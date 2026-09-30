@@ -30,7 +30,7 @@ from .errors import ProxmoxError
 from .manager import ProxmoxManager
 from .settings import ProxmoxSettings, load_settings, parse_settings
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     "ProxmoxClient",
