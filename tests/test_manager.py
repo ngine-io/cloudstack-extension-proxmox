@@ -195,6 +195,25 @@ def test_create_removes_the_vm_when_the_accepted_clone_task_fails(settings):
     assert ("DELETE", "/nodes/pve1/qemu/101", None) in client.calls
 
 
+@pytest.mark.parametrize("vmid", ["abc", "101/../../100", "-1"])
+def test_create_rejects_a_non_numeric_vmid(settings, vmid):
+    settings.vmid = vmid
+    manager, client = build(settings)
+
+    with pytest.raises(ProxmoxError, match="Invalid proxmox_vmid"):
+        manager.create()
+    assert client.calls == []
+
+
+def test_vm_operations_refuse_to_run_without_a_vmid(settings):
+    settings.vmid = ""
+    manager, client = build(settings)
+
+    with pytest.raises(ProxmoxError, match="Invalid proxmox_vmid"):
+        manager.delete()
+    assert client.calls == []
+
+
 def test_create_wraps_unexpected_failures(settings):
     manager, _ = build(settings, errors={"/clone": ValueError("boom")})
 

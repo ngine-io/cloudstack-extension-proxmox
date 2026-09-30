@@ -62,6 +62,9 @@ class ProxmoxManager:
 
     @property
     def _vm_path(self) -> str:
+        # The ID ends up in the URL path, so never let anything but digits in.
+        if not self.settings.vmid.isdigit():
+            raise ProxmoxError(f"Invalid proxmox_vmid '{self.settings.vmid}'")
         return f"/nodes/{self.settings.node}/qemu/{self.settings.vmid}"
 
     def _require(self, **fields: Any) -> None:
