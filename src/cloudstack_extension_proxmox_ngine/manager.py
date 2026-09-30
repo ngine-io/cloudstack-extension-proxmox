@@ -118,18 +118,30 @@ class ProxmoxManager:
             vmmemory=settings.vmmemory,
         )
 
+        vm_path = self._vm_path
         from_iso = settings.template_type.strip().upper() == "ISO"
         self._validate_source_fields(from_iso)
 
         created = False
         try:
+            upid = (
+                self._start_iso_install(vm_name)
+                if from_iso
+                else self._start_clone(vm_name)
+            )
+            # Only once Proxmox accepted the request is the VM ID ours to clean
+            # up; a rejected request may mean another VM already owns it.
             created = True
-            if from_iso:
-                self._create_from_iso(vm_name)
-            else:
-                self._create_from_template(vm_name)
+            self.client.wait_for_task(upid)
+            if not from_iso:
+                # A clone inherits the template sizing, so apply the offering.
+                self.client.call_and_wait(
+                    "POST",
+                    f"{vm_path}/config",
+                    {"cores": settings.vmcpus, "memory": self._memory_mb()},
+                )
             self._configure_networks()
-            self.client.call_and_wait("POST", f"{self._vm_path}/status/start")
+            self.client.call_and_wait("POST", f"{vm_path}/status/start")
         except ProxmoxError:
             if created:
                 self._cleanup_created_vm()
@@ -151,7 +163,7 @@ class ProxmoxManager:
         elif not settings.template_id:
             raise ProxmoxError("Missing required field in JSON: template_id")
 
-    def _create_from_iso(self, vm_name: str) -> None:
+    def _start_iso_install(self, vm_name: str) -> str:
         settings = self.settings
         payload = {
             "vmid": settings.vmid,
@@ -166,11 +178,11 @@ class ProxmoxManager:
             "cpu": "x86-64-v2-AES",
             "memory": self._memory_mb(),
         }
-        self.client.call_and_wait("POST", f"/nodes/{settings.node}/qemu/", payload)
+        return self.client.start_task("POST", f"/nodes/{settings.node}/qemu/", payload)
 
-    def _create_from_template(self, vm_name: str) -> None:
+    def _start_clone(self, vm_name: str) -> str:
         settings = self.settings
-        self.client.call_and_wait(
+        return self.client.start_task(
             "POST",
             f"/nodes/{settings.node}/qemu/{settings.template_id}/clone",
             {
@@ -179,12 +191,6 @@ class ProxmoxManager:
                 "storage": settings.storage,
                 "full": 1 if settings.is_full_clone else 0,
             },
-        )
-        # A clone inherits the template sizing, so apply the service offering.
-        self.client.call_and_wait(
-            "POST",
-            f"{self._vm_path}/config",
-            {"cores": settings.vmcpus, "memory": self._memory_mb()},
         )
 
     def _configure_networks(self) -> None:

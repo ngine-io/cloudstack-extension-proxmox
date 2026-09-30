@@ -121,10 +121,10 @@ class ProxmoxClient:
             raise ProxmoxError("Invalid response from Proxmox API")
         return parsed
 
-    def call_and_wait(
+    def start_task(
         self, method: str, path: str, data: dict[str, Any] | str | None = None
-    ) -> None:
-        """Send a request that starts a Proxmox task and wait for it to finish."""
+    ) -> str:
+        """Send a request that starts a Proxmox task and return its UPID."""
         response = self.call(method, path, data)
         upid = as_string(response.get("data"))
         if not upid:
@@ -134,7 +134,13 @@ class ProxmoxClient:
             raise ProxmoxError(
                 f"Failed to execute API or retrieve UPID. Message: {message}"
             )
-        self.wait_for_task(upid)
+        return upid
+
+    def call_and_wait(
+        self, method: str, path: str, data: dict[str, Any] | str | None = None
+    ) -> None:
+        """Send a request that starts a Proxmox task and wait for it to finish."""
+        self.wait_for_task(self.start_task(method, path, data))
 
     def wait_for_task(
         self, upid: str, timeout: int | None = None, interval: int = 1

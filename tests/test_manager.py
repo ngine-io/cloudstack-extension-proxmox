@@ -174,11 +174,41 @@ def test_create_removes_the_vm_when_a_later_step_fails(settings):
     assert ("DELETE", "/nodes/pve1/qemu/101", None) in client.calls
 
 
+def test_create_leaves_the_vm_id_alone_when_proxmox_rejects_the_request(settings):
+    manager, client = build(
+        settings, errors={"/clone": ProxmoxError("VM 101 already exists")}
+    )
+
+    with pytest.raises(ProxmoxError, match="already exists"):
+        manager.create()
+
+    assert "DELETE" not in [method for method, _, _ in client.calls]
+
+
+def test_create_removes_the_vm_when_the_accepted_clone_task_fails(settings):
+    client = FakeClient(task_errors={"/clone": ProxmoxError("clone failed")})
+    manager = ProxmoxManager(settings, client)
+
+    with pytest.raises(ProxmoxError, match="clone failed"):
+        manager.create()
+
+    assert ("DELETE", "/nodes/pve1/qemu/101", None) in client.calls
+
+
 def test_create_wraps_unexpected_failures(settings):
     manager, _ = build(settings, errors={"/clone": ValueError("boom")})
 
     with pytest.raises(ProxmoxError, match="boom"):
         manager.create()
+
+
+def test_create_removes_the_vm_when_an_unexpected_error_follows_creation(settings):
+    manager, client = build(settings, errors={"/config/": ValueError("bad nic")})
+
+    with pytest.raises(ProxmoxError, match="bad nic"):
+        manager.create()
+
+    assert ("DELETE", "/nodes/pve1/qemu/101", None) in client.calls
 
 
 def test_cleanup_failures_do_not_mask_the_original_error(settings):

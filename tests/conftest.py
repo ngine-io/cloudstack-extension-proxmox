@@ -19,9 +19,12 @@ class FakeClient:
         self,
         responses: dict[str, Any] | None = None,
         errors: dict[str, Exception] | None = None,
+        task_errors: dict[str, Exception] | None = None,
     ) -> None:
         self.responses = responses or {}
         self.errors = errors or {}
+        # Failures of an accepted task, keyed by a substring of the request path.
+        self.task_errors = task_errors or {}
         self.calls: list[tuple[str, str, Any]] = []
         self.waited: list[tuple[str, str, Any]] = []
 
@@ -39,9 +42,18 @@ class FakeClient:
         return self._resolve(method, path)
 
     def call_and_wait(self, method: str, path: str, data: Any = None) -> None:
+        self.wait_for_task(self.start_task(method, path, data))
+
+    def start_task(self, method: str, path: str, data: Any = None) -> str:
         self.calls.append((method, path, data))
-        self.waited.append((method, path, data))
         self._resolve(method, path)
+        self.waited.append((method, path, data))
+        return path
+
+    def wait_for_task(self, upid: str) -> None:
+        for key, exc in self.task_errors.items():
+            if key in upid:
+                raise exc
 
     def paths(self, method: str | None = None) -> list[str]:
         return [p for m, p, _ in self.calls if method is None or m == method]
