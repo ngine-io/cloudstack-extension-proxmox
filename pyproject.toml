@@ -22,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: System :: Systems Administration",
     "Typing :: Typed",
 ]
@@ -54,7 +55,7 @@ path = "src/cloudstack_extension_proxmox_ngine/__init__.py"
 packages = ["src/cloudstack_extension_proxmox_ngine"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src", "tests", "README.md", "LICENSE", "NOTICE"]
+include = ["src", "tests", "README.md", "LICENSE"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"

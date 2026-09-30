@@ -90,7 +90,7 @@ uv run ruff check .        # linting
 uv run mypy                # type checking
 ```
 
-Pull requests run the same checks on Python 3.10 through 3.13.
+Pull requests run the same checks on Python 3.10 through 3.14.
 
 ## License
 
